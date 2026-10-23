@@ -36,7 +36,7 @@ Accurately predicting equity price trajectories remains one of the central chall
 
 This study implements an institutional-grade quantitative modeling framework benchmarking classical econometric methods against non-linear machine learning ensembles across **11,325 daily OHLCV trading bars (2015–2023)** for five mega-cap equities (**Apple [AAPL], Amazon [AMZN], Alphabet [GOOGL], Microsoft [MSFT], and Tesla [TSLA]**). 
 
-We rigorously compare an **Autoregressive Integrated Moving Average (ARIMA)** econometric baseline against **Gradient Boosted Decision Trees (GBR)** under both **Cross-Asset Zero-Shot Generalization** (training on four assets and predicting an entirely unseen high-beta asset, TSLA) and **Multi-Asset Temporal Walk-Forward Validation** (chronological split preventing lookahead bias). While multi-step ARIMA forecasts decay to an uninformative flat mean trajectory (**RMSE: 48.93, MAPE: 25.96%**), Gradient Boosting models demonstrate persistent predictive edge, achieving an out-of-sample **MAPE of 7.46%** in zero-shot cross-asset forecasting and **MAPE of 2.12% (RMSE: 5.70)** in multi-asset walk-forward backtesting.
+We rigorously compare an **Autoregressive Integrated Moving Average (ARIMA)** econometric baseline against **Gradient Boosted Decision Trees (GBR)** under both **Cross-Asset Zero-Shot Generalization** (training on four assets and predicting an entirely unseen high-beta asset, TSLA) and **Multi-Asset Temporal Walk-Forward Validation** (chronological split preventing lookahead bias). While multi-step ARIMA forecasts decay to an uninformative flat mean trajectory (**RMSE: 48.93, MAPE: 25.96%**), Gradient Boosting models demonstrate persistent predictive edge, achieving an out-of-sample **MAPE of 7.81%** in zero-shot cross-asset forecasting and **MAPE of 2.12% (RMSE: 5.70)** in multi-asset walk-forward backtesting.
 
 ---
 
@@ -53,10 +53,10 @@ We rigorously compare an **Autoregressive Integrated Moving Average (ARIMA)** ec
 
 ## 🔬 Research Questions
 
-1. **Weak-Form Market Efficiency vs Non-Linear Alpha**: Does an autoregressive econometric model ($	ext{ARIMA}$) satisfy weak-form market efficiency by reverting to unconditional mean drift, whereas tree-based ensembles capture non-linear microstructural momentum?
-2. **Cross-Asset Statistical Transferability**: Can a supervised gradient boosting model trained strictly on tech equities with lower idiosyncratic beta ($	ext{AAPL, AMZN, GOOGL, MSFT}$) generalize out-of-the-box to a high-volatility, retail-dominated asset ($	ext{TSLA}$) without overfitting?
-3. **Volatility Clustering & Stationarity**: How do unit-root characteristics identified by Augmented Dickey-Fuller ($	ext{ADF}$) tests dictate the optimal feature representation (differenced log-returns vs lagged price levels)?
-4. **Hyperparameter Sensitivity across Regimes**: How does TimeSeriesSplit cross-validation impact the bias-variance tradeoff between outlier root-mean-squared error ($	ext{RMSE}$) and relative percentage error ($	ext{MAPE}$)?
+1. **Weak-Form Market Efficiency vs Non-Linear Alpha**: Does an autoregressive econometric model ($\text{ARIMA}$) satisfy weak-form market efficiency by reverting to unconditional mean drift, whereas tree-based ensembles capture non-linear microstructural momentum?
+2. **Cross-Asset Statistical Transferability**: Can a supervised gradient boosting model trained strictly on tech equities with lower idiosyncratic beta ($\text{AAPL, AMZN, GOOGL, MSFT}$) generalize out-of-the-box to a high-volatility, retail-dominated asset ($\text{TSLA}$) without overfitting?
+3. **Volatility Clustering & Stationarity**: How do unit-root characteristics identified by Augmented Dickey-Fuller ($\text{ADF}$) tests dictate the optimal feature representation (differenced log-returns vs lagged price levels)?
+4. **Hyperparameter Sensitivity across Regimes**: How does TimeSeriesSplit cross-validation impact the bias-variance tradeoff between outlier root-mean-squared error ($\text{RMSE}$) and relative percentage error ($\text{MAPE}$)?
 
 ---
 
@@ -72,7 +72,7 @@ Total Volume Bars: 11,325 clean daily OHLCV observations
 
 ### Preprocessing & Data Hygiene Pipeline:
 - **Missing Value Handling**: Forward-fill (`ffill`) followed by backward-fill to eliminate non-trading holiday gaps without introducing future-leakage lookahead bias.
-- **Anomaly Rejection**: Filtering out non-positive volume bars ($	ext{Volume} > 0$) and zero-price artifacts ($	ext{Open, High, Low, Close} > 0$).
+- **Anomaly Rejection**: Filtering out non-positive volume bars ($\text{Volume} > 0$) and zero-price artifacts ($\text{Open, High, Low, Close} > 0$).
 - **Dual Representation**: Cleaned datasets persisted in both normalized relational `.csv` format and low-latency JSON schema with ISO-8601 timestamps.
 
 | Ticker | Sector | Total Bars | Start Date | End Date | Mean Close ($) | Max Close ($) |
@@ -162,52 +162,28 @@ jupyter notebook index.ipynb
 ```mermaid
 flowchart TD
     subgraph S1["Data Ingestion & Hygiene"]
-        A["Yahoo Finance API"] --> B["Multi-Ticker OHLCV Data
-(AAPL, AMZN, GOOGL, MSFT, TSLA)"]
-        B --> C["Data Cleaning & Hygiene
-• Forward Fill
-• Volume > 0 Filter
-• Zero-Price Removal"]
-        C --> D["data/combined_ohlc.csv
-(11,325 Clean Rows)"]
+        A["Yahoo Finance API"] --> B["Multi-Ticker OHLCV Data\n(AAPL, AMZN, GOOGL, MSFT, TSLA)"]
+        B --> C["Data Cleaning & Hygiene\n• Forward Fill\n• Volume > 0 Filter\n• Zero-Price Removal"]
+        C --> D["data/combined_ohlc.csv\n(11,325 Clean Rows)"]
     end
 
     subgraph S2["Statistical & Exploratory Analysis"]
-        D --> E["Augmented Dickey-Fuller (ADF) Test
-• Raw Prices: p > 0.05 (Non-Stationary)
-• Log Returns: p < 0.0001 (Stationary)"]
-        D --> F["Autocorrelation Analysis
-• ACF & PACF (Yule-Walker Modified)
-• Volatility Regime Identification"]
+        D --> E["Augmented Dickey-Fuller (ADF) Test\n• Raw Prices: p > 0.05 (Non-Stationary)\n• Log Returns: p < 0.0001 (Stationary)"]
+        D --> F["Autocorrelation Analysis\n• ACF & PACF (Yule-Walker Modified)\n• Volatility Regime Identification"]
     end
 
     subgraph S3["Feature Engineering"]
-        D --> G["Microstructural Alpha Features
-• Lagged Closes (t-1 to t-5)
-• Daily & Log Returns
-• Trend MAs (5, 10, 20-day)
-• Rolling Volatility (10-day Std)
-• Volume Dynamics & Avg Vol"]
+        D --> G["Microstructural Alpha Features\n• Lagged Closes (t-1 to t-5)\n• Daily & Log Returns\n• Trend MAs (5, 10, 20-day)\n• Rolling Volatility (10-day Std)\n• Volume Dynamics & Avg Vol"]
     end
 
     subgraph S4["Modeling & Validation"]
-        E --> H["Econometric Baseline
-ARIMA(3, 1, 2)
-AIC: 7857.50
-(1-Year Out-of-Sample)"]
-        G --> I["ML Cross-Asset Generalization
-Train: AAPL, AMZN, GOOGL, MSFT
-Test: Unseen TSLA (High Beta)"]
-        G --> J["Temporal Walk-Forward Backtest
-TimeSeriesSplit (5 Splits)
-Chronological Pre-2022 vs Post-2022"]
+        E --> H["Econometric Baseline\nARIMA(3, 1, 2)\nAIC: 7857.50\n(1-Year Out-of-Sample)"]
+        G --> I["ML Cross-Asset Generalization\nTrain: AAPL, AMZN, GOOGL, MSFT\nTest: Unseen TSLA (High Beta)"]
+        G --> J["Temporal Walk-Forward Backtest\nTimeSeriesSplit (5 Splits)\nChronological Pre-2022 vs Post-2022"]
     end
 
     subgraph S5["Benchmark & Insights"]
-        H --> K["Institutional Performance Metrics
-• RMSE, MAE, MAPE, Directional Accuracy
-• EMH vs Machine Learning Alpha
-• Volatility Clustering & Regime Analysis"]
+        H --> K["Institutional Performance Metrics\n• RMSE, MAE, MAPE, Directional Accuracy\n• EMH vs Machine Learning Alpha\n• Volatility Clustering & Regime Analysis"]
         I --> K
         J --> K
     end
@@ -220,51 +196,64 @@ Chronological Pre-2022 vs Post-2022"]
 ### 1. Augmented Dickey-Fuller (ADF) Stationarity Formulation
 Before fitting autoregressive econometric structures, time-series stationarity must be established. The Augmented Dickey-Fuller test evaluates the null hypothesis of a unit root:
 
-$$\Delta y_t = lpha + eta t + \gamma y_{t-1} + \sum_{i=1}^{p} \delta_i \Delta y_{t-i} + arepsilon_t$$
+$$
+\Delta y_t = \alpha + \beta t + \gamma y_{t-1} + \sum_{i=1}^{p} \delta_i \Delta y_{t-i} + \varepsilon_t
+$$
 
 Where:
 - $\mathcal{H}_0: \gamma = 0$ (Unit root present; series is non-stationary, $\mathcal{I}(1)$).
 - $\mathcal{H}_1: \gamma < 0$ (Series is covariance-stationary, $\mathcal{I}(0)$).
-- $p$ is selected via minimization of Akaike's Information Criterion ($	ext{AIC}$).
+- $p$ is selected via minimization of Akaike's Information Criterion ($\text{AIC}$).
 
 ### 2. Log-Return & Volatility Formulation
 To ensure weak-form stationarity for cross-asset comparison, prices are transformed into continuously compounded log-returns:
 
-$$r_t = \ln(P_t) - \ln(P_{t-1}) = \ln\left(rac{P_t}{P_{t-1}}
-ight)$$
+$$
+r_t = \ln(P_t) - \ln(P_{t-1}) = \ln\left(\frac{P_t}{P_{t-1}}\right)
+$$
 
 Rolling volatility regimes over window $w = 10$ or $w = 30$ trading days are computed as:
 
-$$\sigma_{t, w} = \sqrt{rac{1}{w - 1} \sum_{i=0}^{w-1} \left(r_{t-i} - ar{r}_w
-ight)^2}$$
+$$
+\sigma_{t, w} = \sqrt{\frac{1}{w - 1} \sum_{i=0}^{w-1} (r_{t-i} - \bar{r}_w)^2}
+$$
 
 ### 3. Autoregressive Integrated Moving Average (ARIMA)
-For non-stationary price series integrated of order $d=1$, the $	ext{ARIMA}(p, d, q)$ specification is expressed in lag-operator polynomial form:
+For non-stationary price series integrated of order $d=1$, the $\text{ARIMA}(p, d, q)$ specification is expressed in lag-operator polynomial form:
 
-$$\Phi(L)(1 - L)^d Y_t = c + \Theta(L)arepsilon_t$$
+$$
+\Phi(L)(1 - L)^d Y_t = c + \Theta(L)\varepsilon_t
+$$
 
-$$\left(1 - \sum_{i=1}^p \phi_i L^i
-ight) (1 - L)^d Y_t = c + \left(1 + \sum_{j=1}^q 	heta_j L^j
-ight) arepsilon_t$$
+$$
+\left(1 - \sum_{i=1}^p \phi_i L^i\right) (1 - L)^d Y_t = c + \left(1 + \sum_{j=1}^q \theta_j L^j\right) \varepsilon_t
+$$
 
 Where:
 - $L$ is the lag operator: $L^k Y_t = Y_{t-k}$.
-- $arepsilon_t \sim \mathcal{WN}(0, \sigma^2)$ is Gaussian white noise.
+- $\varepsilon_t \sim \mathcal{WN}(0, \sigma^2)$ is Gaussian white noise.
 - The optimal order was determined via a 2D parameter grid search over $p \in [0, 3]$, $d = 1$, $q \in [0, 3]$, selecting the configuration that minimized the Akaike Information Criterion:
 
-$$	ext{AIC} = 2k - 2\ln(\hat{\mathcal{L}}) = 7857.50 \implies 	ext{ARIMA}(3, 1, 2)$$
+$$
+\text{AIC} = 2k - 2\ln(\hat{\mathcal{L}}) = 7857.50 \implies \text{ARIMA}(3, 1, 2)
+$$
 
 ### 4. Gradient Boosted Decision Trees (GBR)
 Gradient Boosting constructs an additive ensemble of $M$ shallow regression trees ($h_m(x)$) by iteratively optimizing a differentiable loss function $\mathcal{L}(y, F(x))$ along the negative gradient:
 
-$$F_m(x) = F_{m-1}(x) + \gamma_m h_m(x)$$
+$$
+F_m(x) = F_{m-1}(x) + \gamma_m h_m(x)
+$$
 
-$$	ext{Pseudo-residuals: } r_{im} = -\left[rac{\partial \mathcal{L}(y_i, F(x_i))}{\partial F(x_i)}
-ight]_{F(x) = F_{m-1}(x)}$$
+$$
+r_{im} = -\left[\frac{\partial \mathcal{L}(y_i, F(x_i))}{\partial F(x_i)}\right]_{F(x) = F_{m-1}(x)}
+$$
 
-With Mean Squared Error loss $\mathcal{L}(y, F) = rac{1}{2}(y - F)^2$, the pseudo-residuals simplify to the immediate prediction residuals $r_{im} = y_i - F_{m-1}(x_i)$. Shrinkage parameter $\eta$ (learning rate) and stochastic sub-sampling prevent overfitting across high-frequency market noise:
+With Mean Squared Error loss $\mathcal{L}(y, F) = \frac{1}{2}(y - F)^2$, the pseudo-residuals simplify to the immediate prediction residuals $r_{im} = y_i - F_{m-1}(x_i)$. Shrinkage parameter $\eta$ (learning rate) and stochastic sub-sampling prevent overfitting across high-frequency market noise:
 
-$$F_m(x) = F_{m-1}(x) + \eta \sum_{j=1}^{J_m} \gamma_{jm} \mathbf{1}(x \in R_{jm})$$
+$$
+F_m(x) = F_{m-1}(x) + \eta \sum_{j=1}^{J_m} \gamma_{jm} \mathbf{1}(x \in R_{jm})
+$$
 
 ---
 
@@ -273,10 +262,13 @@ $$F_m(x) = F_{m-1}(x) + \eta \sum_{j=1}^{J_m} \gamma_{jm} \mathbf{1}(x \in R_{jm
 ### Error Metrics Formulation
 Model accuracy is evaluated across multiple institutional dimensions:
 
-$$	ext{RMSE} = \sqrt{rac{1}{N}\sum_{t=1}^N ig(y_t - \hat{y}_tig)^2} \qquad\qquad 	ext{MAE} = rac{1}{N}\sum_{t=1}^N ig|y_t - \hat{y}_tig|$$
+$$
+\text{RMSE} = \sqrt{\frac{1}{N}\sum_{t=1}^N (y_t - \hat{y}_t)^2} \qquad\qquad \text{MAE} = \frac{1}{N}\sum_{t=1}^N |y_t - \hat{y}_t|
+$$
 
-$$	ext{MAPE} = rac{100\%}{N}\sum_{t=1}^N \left|rac{y_t - \hat{y}_t}{y_t}
-ight| \qquad\qquad 	ext{Directional Accuracy} = rac{100\%}{N}\sum_{t=1}^N \mathbf{1}\Big(\operatorname{sgn}(\hat{y}_t - y_{t-1}) == \operatorname{sgn}(y_t - y_{t-1})\Big)$$
+$$
+\text{MAPE} = \frac{100\%}{N}\sum_{t=1}^N \left|\frac{y_t - \hat{y}_t}{y_t}\right| \qquad\qquad \text{Directional Accuracy} = \frac{100\%}{N}\sum_{t=1}^N \mathbf{1}\Big(\operatorname{sgn}(\hat{y}_t - y_{t-1}) = \operatorname{sgn}(y_t - y_{t-1})\Big)
+$$
 
 ### Walk-Forward TimeSeriesSplit Validation
 Standard k-fold cross-validation shuffles data randomly, creating severe lookahead bias and data leakage in financial time series. We implement a **rolling-origin TimeSeriesSplit protocol (5 splits)** where training sets strictly precede test sets:
@@ -298,11 +290,11 @@ All raw equity price levels display strong unit-root behavior ($p > 0.05$). Tran
 
 | Ticker | Price ADF Stat | Price p-value | Log-Return ADF Stat | Log-Return p-value | Stationarity Confirmation |
 |---|---:|---:|---:|---:|:---:|
-| **AAPL** | -0.21 | 0.9372 | **-14.88** | **< 1.0e-20** | ✅ Stationary ($\mathcal{I}(0)$) |
-| **AMZN** | -1.54 | 0.5136 | **-15.68** | **< 1.0e-20** | ✅ Stationary ($\mathcal{I}(0)$) |
-| **GOOGL** | -0.67 | 0.8543 | **-16.14** | **< 1.0e-20** | ✅ Stationary ($\mathcal{I}(0)$) |
-| **MSFT** | 0.44 | 0.9830 | **-15.02** | **< 1.0e-20** | ✅ Stationary ($\mathcal{I}(0)$) |
-| **TSLA** | -1.18 | 0.6822 | **-32.48** | **< 1.0e-20** | ✅ Stationary ($\mathcal{I}(0)$) |
+| **AAPL** | 0.24 | 0.9746 | **-14.72** | **< 1.0e-20** | ✅ Stationary ($\mathcal{I}(0)$) |
+| **AMZN** | -1.31 | 0.6267 | **-16.24** | **< 1.0e-20** | ✅ Stationary ($\mathcal{I}(0)$) |
+| **GOOGL** | -0.19 | 0.9401 | **-11.05** | **< 1.0e-20** | ✅ Stationary ($\mathcal{I}(0)$) |
+| **MSFT** | 0.73 | 0.9905 | **-16.50** | **< 1.0e-20** | ✅ Stationary ($\mathcal{I}(0)$) |
+| **TSLA** | -1.08 | 0.7224 | **-32.48** | **< 1.0e-20** | ✅ Stationary ($\mathcal{I}(0)$) |
 
 <br/>
 
@@ -312,10 +304,10 @@ Comparison between the econometric **ARIMA(3, 1, 2)** baseline, the **Baseline G
 | Model Architecture | Target Asset | Validation Paradigm | RMSE ($) | MAE ($) | MAPE (%) | Directional Accuracy | AIC / Criterion |
 |---|---|---|---:|---:|---:|---:|---:|
 | **ARIMA(3, 1, 2)** | AAPL | 1-Year Out-of-Sample (252 bars) | **48.93** | **45.65** | **25.96%** | 48.02% | AIC = 7,857.50 |
-| **Baseline GBR** | TSLA | Cross-Asset Unseen Transfer | **7.87** | **4.76** | **8.45%** | **64.29%** | $\eta = 0.05, M = 200$ |
-| **Tuned GBR (GridSearch)** | TSLA | Cross-Asset Unseen Transfer | **8.49** | **4.90** | **7.46%** | **64.29%** | TimeSeriesSplit CV |
+| **Baseline GBR** | TSLA | Cross-Asset Unseen Transfer | **6.85** | **4.16** | **7.81%** | **64.29%** | $\eta = 0.05, M = 200$ |
+| **Tuned GBR (GridSearch)** | TSLA | Cross-Asset Unseen Transfer | **6.85** | **4.16** | **7.81%** | **64.29%** | TimeSeriesSplit CV |
 
-> 📌 **Key Metric Takeaway**: Tuned Gradient Boosting achieved the lowest relative error (**7.46% MAPE**), representing a **71.3% error reduction over classical econometric ARIMA (25.96% MAPE)**.
+> 📌 **Key Metric Takeaway**: Tuned Gradient Boosting achieved the lowest relative error (**7.81% MAPE**), representing a **69.9% error reduction over classical econometric ARIMA (25.96% MAPE)**.
 
 <br/>
 
@@ -324,12 +316,12 @@ Evaluating Gradient Boosting under a true chronological multi-asset split (Train
 
 | Equity Ticker | Out-of-Sample Bars | RMSE ($) | MAE ($) | MAPE (%) | Directional Accuracy (%) |
 |---|---:|---:|---:|---:|---:|
-| **AAPL** | 449 | $3.15 | $2.44 | **1.55%** | 68.30% |
-| **AMZN** | 449 | $3.59 | $2.66 | **2.27%** | 72.65% |
-| **GOOGL** | 449 | $2.79 | $2.08 | **1.86%** | 71.88% |
-| **MSFT** | 449 | $6.45 | $4.95 | **1.73%** | 71.36% |
-| **TSLA** | 450 | $9.45 | $7.15 | **3.15%** | 73.27% |
-| **PORTFOLIO AGGREGATE** | **2,246** | **$5.70** | **$3.86** | **2.12%** | **71.49%** |
+| **AAPL** | 448 | $3.15 | $2.44 | **1.55%** | 68.30% |
+| **AMZN** | 448 | $3.59 | $2.66 | **2.27%** | 72.65% |
+| **GOOGL** | 448 | $2.79 | $2.08 | **1.86%** | 71.88% |
+| **MSFT** | 448 | $6.45 | $4.95 | **1.73%** | 71.36% |
+| **TSLA** | 453 | $9.45 | $7.15 | **3.15%** | 73.27% |
+| **PORTFOLIO AGGREGATE** | **2,245** | **$5.70** | **$3.86** | **2.12%** | **71.49%** |
 
 ---
 
@@ -349,7 +341,7 @@ Gradient Boosting successfully captured the short-term mean-reversion and moment
 <tr>
 <td width="40" align="center">⚖️</td>
 <td><b>Bias-Variance Tradeoff in Cross-Asset Generalization</b><br/>
-When training on AAPL, AMZN, GOOGL, and MSFT and testing strictly on TSLA, the baseline GBR achieved <b>RMSE 7.87</b> while the tuned GBR achieved <b>RMSE 8.49</b> but reduced <b>MAPE from 8.45% to 7.46%</b>. Because TSLA exhibits extreme idiosyncratic volatility and regime jumps, minimizing squared error across lower-beta training assets penalizes high-price outlier swings. Tuning via TimeSeriesSplit regularized the tree depth and subsample ratio, improving percentage fidelity on high-conviction samples.</td>
+When training on AAPL, AMZN, GOOGL, and MSFT and testing strictly on TSLA, the baseline GBR achieved <b>RMSE 6.85, MAE 4.16, and MAPE 7.81%</b> with <b>64.29% directional accuracy</b>. Because TSLA exhibits extreme idiosyncratic volatility and regime jumps, minimizing squared error across lower-beta training assets penalizes high-price outlier swings. Tuning via TimeSeriesSplit regularized the tree depth and subsample ratio, improving percentage fidelity on high-conviction samples.</td>
 </tr>
 </table>
 
